@@ -1,9 +1,8 @@
-from sqlalchemy import select
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
 import config
-from models import Base, User, Address
+from models import Base, create_user, create_user_with_emails, show_users, fetch_user, show_addresses, add_addresses
 
 engine = create_engine(
     url=config.SQLALCHEMY_URL,
@@ -11,51 +10,16 @@ engine = create_engine(
 )
 
 
-def create_user(session: Session, name: str, username: str) -> User:
-    user = User(
-        name=name,
-        username=username,
-    )
-    session.add(user)
-    session.commit()
-
-    return user
-
-
-def create_user_with_emails(
-        session: Session,
-        name: str,
-        username: str,
-        emails: list[str]
-) -> User:
-    addresses = [
-
-        Address(email=email)
-        for email in emails
-    ]
-    user = User(
-        name=name,
-        username=username,
-        addresses=addresses,
-    )
-    session.add(user)
-
-    session.commit()
-
-    return user
-
-
-def fetch_user(session: Session, name: str) -> User | None:
-    stmt = select(User).where(User.name == name)
-    user: User | None = session.execute(stmt).scalar_one()
-    return user
-
-
 def main():
     Base.metadata.create_all(bind=engine)
 
     with Session(engine) as session:
-
+        # create_user(
+        #     session=session,
+        #     name="John Brown",
+        #     username="jbrown",
+        # )
+        #
         # create_user(
         #     session=session,
         #     name="Bob White",
@@ -71,8 +35,10 @@ def main():
         #         "michael.black@example.gov",
         #     ]
         # )
-        user = fetch_user(session, "Bob White")
-        print("Bob White?", user)
+        # user = fetch_user(session, "Bob White")
+        # print("Bob White?", user)
+        # add_addresses(session, user, "bob@example.com")
+        # show_addresses(session)
 
 
 if __name__ == '__main__':

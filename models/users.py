@@ -1,13 +1,9 @@
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Iterable
 
-from sqlalchemy import String
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy import String, select
+from sqlalchemy.orm import Mapped, mapped_column, relationship, Session, selectinload
 
-from models.base import Base
-
-if TYPE_CHECKING:
-    from .addresses import Address
-
+from . import Base
 
 class User(Base):
     __tablename__ = "users"
@@ -25,3 +21,28 @@ class User(Base):
 
     def __repr__(self) -> str:
         return str(self)
+
+
+def create_user(session: Session, name: str, username: str) -> User:
+    user = User(
+        name=name,
+        username=username,
+    )
+    session.add(user)
+    session.commit()
+
+def fetch_user(session: Session, name: str) -> User | None:
+    stmt = select(User).where(User.name == name)
+    user: User | None = session.execute(stmt).scalar_one()
+    return user
+
+
+def show_users(session: Session):
+    stmt = select(User).options(
+        selectinload(User.addresses),
+    )
+    users: Iterable[User] = session.scalars(stmt)
+    for user in users:
+        print("[+]", user)
+        for address in user.addresses:  # type: Address
+            print(" - @", address.email)
