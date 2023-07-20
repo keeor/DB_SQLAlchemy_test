@@ -5,24 +5,30 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship, Session, selecti
 
 from . import Base
 
+# Ето вроде как решает проблему циклического импорта, но я не уверен... именно ли ето оно делает
+if TYPE_CHECKING:
+    from . import Address
+
+
 class User(Base):
     __tablename__ = "users"
-    id: Mapped[int] = mapped_column(primary_key=True)
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String(30))
-    username: Mapped[str | None]
-
+    username: Mapped[str | None] = mapped_column(String(15), unique=True)
     addresses: Mapped[list["Address"]] = relationship(
+        "Address",
         back_populates="user",
-        cascade="all, delete-orphan"
+        cascade="all, delete, delete-orphan"
     )
 
+    # то ето такое я пока не понял, в гайде сказали нужно...
     def __str__(self) -> str:
        return f"User(id={self.id!r}, name={self.name!r}, username={self.username!r})"
 
     def __repr__(self) -> str:
         return str(self)
 
-
+# Создаем обычного юзера, без адреса (юзернейм должен быть уникален, но пока проверки на ето нету)
 def create_user(session: Session, name: str, username: str) -> User:
     user = User(
         name=name,
@@ -31,18 +37,34 @@ def create_user(session: Session, name: str, username: str) -> User:
     session.add(user)
     session.commit()
 
-def fetch_user(session: Session, name: str) -> User | None:
-    stmt = select(User).where(User.name == name)
+
+# Ето вроде как просто запрос на поиск юзера, хз зачем сделал, было в гайде)
+def fetch_user(session: Session, username: str) -> User | None:
+    stmt = select(User).where(User.username == username)
     user: User | None = session.execute(stmt).scalar_one()
     return user
 
 
+# Функция показа юзера (вывод в комм. строку)
 def show_users(session: Session):
     stmt = select(User).options(
         selectinload(User.addresses),
+        # selectinload юзаем дл того что-бы уменьшить кол-во запросов sql
+        # (так получается одним запросом всё что нужно вывести)
     )
     users: Iterable[User] = session.scalars(stmt)
     for user in users:
         print("[+]", user)
         for address in user.addresses:  # type: Address
             print(" - @", address.email)
+
+# Хуйня кривая но работает, делаем запрос на посик user по username и вытягиваем его id
+# id нужен для удаления из других таблиц ибо так прописаны связи
+# PS. нейминг у меня страдает)
+
+def delete_user(session: Session, username: str) -> User:
+    stmt = select(User).where(User.username == username)
+    x = session.execute(stmt).scalar_one()
+    y = session.query(User).get(x.id)
+    session.delete(y)
+    session.commit()

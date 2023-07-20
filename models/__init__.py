@@ -6,3 +6,4 @@ from .addresses import show_addresses
 from .users import create_user
 from .users import show_users
 from .users import fetch_user
+from .users import delete_user
