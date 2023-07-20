@@ -28,6 +28,7 @@ class User(Base):
     def __repr__(self) -> str:
         return str(self)
 
+
 # Создаем обычного юзера, без адреса (юзернейм должен быть уникален, но пока проверки на ето нету)
 def create_user(session: Session, name: str, username: str) -> User:
     user = User(
@@ -58,13 +59,22 @@ def show_users(session: Session):
         for address in user.addresses:  # type: Address
             print(" - @", address.email)
 
+
 # Хуйня кривая но работает, делаем запрос на посик user по username и вытягиваем его id
 # id нужен для удаления из других таблиц ибо так прописаны связи
 # PS. нейминг у меня страдает)
-
-def delete_user(session: Session, username: str) -> User:
+def delete_user(session: Session, username: str):
     stmt = select(User).where(User.username == username)
     x = session.execute(stmt).scalar_one()
     y = session.query(User).get(x.id)
     session.delete(y)
     session.commit()
+
+
+def update_user_name(session: Session, username: str, name: str):
+    usr = session.query(User).filter(User.username == username).first()
+    if usr is not None:
+        usr.name = name
+        session.commit()
+    else:
+        print("!User not found!")

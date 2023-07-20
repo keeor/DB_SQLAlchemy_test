@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 import config
 from models import Base
 from models import create_user, create_user_with_emails, show_users, fetch_user, delete_user
-from models import show_addresses, add_addresses
+from models import show_addresses, add_addresses, update_user_name
 
 
 engine = create_engine(
@@ -17,7 +17,7 @@ def main():
     Base.metadata.create_all(bind=engine)
     #вот ета конструкция даёт нам возможность не писать после каждой функции комит что упрощает жизнь
     with Session(engine) as session:
-        pass
+        # pass
         # delete_user(session, "bob")
 
         # create_user(
@@ -25,6 +25,12 @@ def main():
         #     name="John Brown",
         #     username="jbrown",
         # )
+
+        update_user_name(
+            session=session,
+            username="jbrown",
+            name="Jackob Brown"
+        )
 
         # create_user(
         #     session=session,
